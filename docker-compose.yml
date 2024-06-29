@@ -1,0 +1,34 @@
+services:
+
+  postgres:
+    image: postgres:latest
+    container_name: my-postgres-container
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: didgksehd
+      POSTGRES_DB: file
+    networks:
+      - backend-networks
+
+  nestjs_api:
+    build:
+      dockerfile: Dockerfile
+      context: .
+      target: development
+    volumes:
+      - .:/usr/src/app
+    env_file:
+      - .env
+    command: npm run start:dev
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+    networks:
+      - backend-networks
+
+
+networks:
+  backend-networks:
