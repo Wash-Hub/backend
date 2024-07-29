@@ -17,9 +17,18 @@ import { ApiTags } from '@nestjs/swagger';
 @Controller('map')
 export class MapController {
   constructor(private readonly mapService: MapService) {}
-
+  //
+  // @Post('coordinates')
+  // async getCoordinates(@Query('address') address: string) {
+  //   return this.mapService.getCoordinatesByAddress(address);
+  // }
   @Post('coordinates')
-  async getCoordinates(@Query('address') address: string) {
-    return this.mapService.getCoordinatesByAddress(address);
+  async saveAllCoordinates() {
+    return this.mapService.saveAllCoordinates();
   }
+
+  // @Post('cleanup')
+  // async cleanupCoorinates() {
+  //   return this.mapService.cleanUpCoordiates();
+  // }
 }

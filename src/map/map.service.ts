@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { CreateMapDto } from './dto/create-map.dto';
-import { UpdateMapDto } from './dto/update-map.dto';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { Map } from './entities/map.entity';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 
 @Injectable()
 export class MapService {
@@ -19,38 +19,98 @@ export class MapService {
     private readonly httpService: HttpService,
   ) {}
 
-  async getCoordinatesByAddress(address: string): Promise<any> {
+  async cleanUpCoordiates() {
     const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
-    console.log('api', apiKey);
-    const response = await firstValueFrom(
-      this.httpService.get(this.kakaoApiUrl, {
-        params: { query: address },
-        headers: { Authorization: `KakaoAK ${apiKey}` },
-      }),
+    const storeResponse = await axios.get(
+      'http://www.cleanup24.co.kr/sub/storelist/list.asp',
     );
+    const $ = cheerio.load(storeResponse.data);
+    $('li.li2').each((index, element) => {
+      const imgElement = $(element).find('img').first();
+      const img = imgElement.attr('data-src'); // data-src 속성에서 이미지 URL을 추출
+      let title = $(element).find('h4.h4').text().trim();
+      const roadNames = $(element).find('p.p').text().trim();
 
-    const data = response.data;
-    data.documents[0].address;
+      console.log('dsda', img);
 
-    console.log('address_name:', data.documents[0].address);
-    // const map = await this.mapRepository.findOneBy({
-    //   where:
-    // })
-    const newMap = await this.mapRepository.create({
-      placeName: address,
-      roadName: data.documents[0].address.address_name,
-      longitude: data.documents[0].address.x,
-      latitude: data.documents[0].address.y,
+      if (title.includes('런드리24')) {
+        title = title.replaceAll('런드리24', '').trim();
+      }
+      if (img && img.startsWith('http')) {
+        storeData.push({
+          img,
+          title,
+          roadNames,
+        });
+      }
     });
 
-    await this.mapRepository.save(newMap);
+    // 데이터를 저장할 배열
+    const storeData = [];
+  }
 
-    return newMap;
+  async saveAllCoordinates(): Promise<Map[]> {
+    const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
+    console.log('api', apiKey);
 
-    // if (data.documents && data.documents.length > 0) {
-    //   const { x, y } = data.documents[0].address;
-    //   // return { longitude: x, latitude: y };
-    // }
-    // throw new Error('No coordinates found for the given address');
+    // HTML 파싱을 위한 axios 호출
+    const storeResponse = await axios.get('https://laundry24.net/storestatus/');
+    const $ = cheerio.load(storeResponse.data);
+
+    // 데이터를 저장할 배열
+    const storeData = [];
+
+    // li 요소를 순회하면서 data-src, title, description 추출
+    $('li.li2').each((index, element) => {
+      const imgElement = $(element).find('img').first();
+      const img = imgElement.attr('data-src'); // data-src 속성에서 이미지 URL을 추출
+      let title = $(element).find('h4.h4').text().trim();
+      const roadNames = $(element).find('p.p').text().trim();
+
+      if (title.includes('런드리24')) {
+        title = title.replaceAll('런드리24', '').trim();
+      }
+      if (img && img.startsWith('http')) {
+        storeData.push({
+          img,
+          title,
+          roadNames,
+        });
+      }
+    });
+
+    // 저장된 Map 객체를 저장할 배열
+    const savedMaps: Map[] = [];
+    const titleName = '런드리24 ';
+
+    // 새로운 맵 엔트리 생성 및 저장
+    for (const store of storeData) {
+      const kakaoResponse = await firstValueFrom(
+        this.httpService.get(this.kakaoApiUrl, {
+          params: { query: store.roadNames },
+          headers: { Authorization: `KakaoAK ${apiKey}` },
+        }),
+      );
+
+      const kakaoData = kakaoResponse.data;
+      if (kakaoData.documents && kakaoData.documents.length > 0) {
+        const addressName = kakaoData.documents[0].address.address_name;
+        const longitude = kakaoData.documents[0].address.x;
+        const latitude = kakaoData.documents[0].address.y;
+
+        const newMap = this.mapRepository.create({
+          placeName: titleName + store.title,
+          roadName: addressName,
+          longitude: longitude,
+          latitude: latitude,
+          picture: store.img,
+        });
+
+        const savedMap = await this.mapRepository.save(newMap);
+        savedMaps.push(savedMap);
+      }
+    }
+
+    return savedMaps;
   }
 }

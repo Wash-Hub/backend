@@ -9,8 +9,8 @@ export class Map extends CommonEntity {
   @Column() //도로명
   public roadName: string;
 
-  @Column('text', { array: true, nullable: true }) //사진
-  public picture?: string[];
+  @Column() //사진
+  public picture?: string;
 
   @Column() // 경도 (x)
   public longitude: string;
