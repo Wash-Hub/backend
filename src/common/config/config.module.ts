@@ -19,7 +19,6 @@ import * as Joi from '@hapi/joi';
         REFRESHTOKEN_EXPIRATION_TIME: Joi.string().required(),
 
         KAKAO_AUTH_CLIENTID: Joi.string().required(),
-        KAKAO_URL: Joi.string().required(),
         KAKAO_AUTH_CALLBACK_URL: Joi.string().required(),
       }),
     }),
