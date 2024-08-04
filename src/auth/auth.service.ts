@@ -5,6 +5,7 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { TokenPayloadInterface } from './tokenPayload.interface';
+import {UpdateUserDto} from "../user/dto/update-user.dto";
 
 @Injectable()
 export class AuthService {
@@ -39,5 +40,20 @@ export class AuthService {
     // // )}; Domain=localhost`;
 
     return { refreshToken };
+  }
+
+  async userInfo(id: string) {
+    const userInfo = await this.userService.getUserInfo(id);
+    return userInfo;
+  }
+
+  async updateUser(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.userService.updateUser(id, updateUserDto);
+    return user
+  }
+
+  async deletedUser(id: string) {
+    const user = await this.userService.deleteByUser(id);
+    return user;
   }
 }
