@@ -52,4 +52,36 @@ export class UserService {
       currentHashedRefreshToken: null,
     });
   }
+
+  async deleteByUser(id: string) {
+    const user = await this.userRepository.findOne({
+      where: { id}
+    })
+    if (!user) {
+      throw  new NotFoundException('No user')
+    }
+    await this.userRepository.delete(id)
+    return 'deleted';
+  }
+
+  async getUserInfo(id: string) {
+    const profile = await this.userRepository.findOne({
+      where: {id}
+    })
+    return profile;
+  }
+
+  //update
+  async updateUser(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.userRepository.findOne({
+      where: {id}
+    })
+
+    if(!user) {
+      throw new NotFoundException('no userid')
+    }
+
+    await this.userRepository.update({id}, updateUserDto)
+    return 'success'
+  }
 }

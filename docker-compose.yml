@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: didgksehd
-      POSTGRES_DB: wash
+      POSTGRES_DB: washhub
     networks:
       - backend-networks
 
