@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateMapReviewDto } from './dto/create-map-review.dto';
 import { UpdateMapReviewDto } from './dto/update-map-review.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -21,21 +25,22 @@ export class MapReviewService {
     private readonly awsService: AwsService,
   ) {}
 
+  folderName = 'map';
+
   async createReview(
     createMapReviewDto: CreateMapReviewDto,
     // user: User,
     files: Express.Multer.File[],
   ) {
-    console.log('123', files);
     const uploadedImagesUrls = await Promise.all(
       files.map(async (file) => {
-        const { key } = await this.awsService.uploadFileToS3('map', file);
-        console.log('key', key);
+        const { key } = await this.awsService.uploadFileToS3(
+          this.folderName,
+          file,
+        );
         return this.awsService.getAwsS3FileUrl(key);
       }),
     );
-
-    console.log('ㄴㅇㅁㅇ', uploadedImagesUrls);
     const newReview = await this.mapReviewRepository.create({
       // user,
       ...createMapReviewDto,
@@ -43,5 +48,32 @@ export class MapReviewService {
     });
     await this.mapReviewRepository.save(newReview);
     return newReview;
+  }
+
+  async deleteReview(id: string) {
+    try {
+      const review = await this.mapReviewRepository.findOne({
+        where: { id },
+      });
+
+      if (!review) {
+        throw new NotFoundException('Review not found');
+      }
+      await Promise.all(
+        review.img.map(async (imageUrl) => {
+          const key = await this.awsService.extractS3KeyFromUrl(
+            imageUrl,
+            this.folderName,
+          );
+          console.log('key', key);
+          await this.awsService.deleteS3Object(key);
+        }),
+      );
+
+      await this.mapReviewRepository.delete(id);
+      return 'deleted';
+    } catch (err) {
+      throw new NotFoundException('Failed to delete review');
+    }
   }
 }
