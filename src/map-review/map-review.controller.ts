@@ -15,7 +15,7 @@ import { MapReviewService } from './map-review.service';
 import { CreateMapReviewDto } from './dto/create-map-review.dto';
 import { UpdateMapReviewDto } from './dto/update-map-review.dto';
 import { JwtAccessAuthGuard } from '../auth/guard/jwtAccess-auth.guard';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequestWithUserInterface } from '../auth/requestWithUser.interface';
 import { FilesInterceptor } from '@nestjs/platform-express';
 
@@ -43,5 +43,14 @@ export class MapReviewController {
       files,
     );
     return newReview;
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth('access-token')
+  // @UseGuards(JwtAccessAuthGuard)
+  @ApiOperation({ summary: '삭제', description: '리뷰삭제' })
+  async deleteReview(@Param('id') id: string) {
+    const review = await this.mapReviewService.deleteReview(id);
+    return review;
   }
 }
