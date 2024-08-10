@@ -1,10 +1,11 @@
-import { BeforeInsert, Column, Entity } from 'typeorm';
+import { BeforeInsert, Column, Entity, OneToMany } from 'typeorm';
 import { CommonEntity } from '../../common/entities/common.entity';
 import { Provider } from './provider.enum';
 import * as gravatar from 'gravatar';
 import * as bcrypt from 'bcryptjs';
 import { InternalServerErrorException } from '@nestjs/common';
 import { Exclude } from 'class-transformer';
+import { MapReview } from '../../map-review/entities/map-review.entity';
 
 @Entity()
 export class User extends CommonEntity {
@@ -30,6 +31,11 @@ export class User extends CommonEntity {
   @Column({ nullable: true })
   @Exclude()
   public currentHashedRefreshToken?: string;
+
+  // @OneToMany(() => MapReview, (mapReview: MapReview) => mapReview.user, {
+  //   cascade: true,
+  // })
+  // public mapReview: MapReview[];
 
   @BeforeInsert()
   async beforeSaveFunction(): Promise<void> {
