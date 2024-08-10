@@ -55,33 +55,45 @@ export class UserService {
 
   async deleteByUser(id: string) {
     const user = await this.userRepository.findOne({
-      where: { id}
-    })
+      where: { id },
+    });
     if (!user) {
-      throw  new NotFoundException('No user')
+      throw new NotFoundException('No user');
     }
-    await this.userRepository.delete(id)
+    await this.userRepository.delete(id);
     return 'deleted';
   }
 
   async getUserInfo(id: string) {
     const profile = await this.userRepository.findOne({
-      where: {id}
-    })
+      where: { id },
+    });
     return profile;
   }
 
   //update
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
     const user = await this.userRepository.findOne({
-      where: {id}
-    })
+      where: { id },
+    });
 
-    if(!user) {
-      throw new NotFoundException('no userid')
+    if (!user) {
+      throw new NotFoundException('no userid');
     }
 
-    await this.userRepository.update({id}, updateUserDto)
-    return 'success'
+    await this.userRepository.update({ id }, updateUserDto);
+    return 'success';
+  }
+
+  async setCurrentRefreshToken(refreshToken: string, userId: string) {
+    const saltValue = await bcrypt.genSalt(10);
+    const currentHashedRefreshToken = await bcrypt.hash(
+      refreshToken,
+      saltValue,
+    );
+    console.log(currentHashedRefreshToken);
+    await this.userRepository.update(userId, {
+      currentHashedRefreshToken,
+    });
   }
 }

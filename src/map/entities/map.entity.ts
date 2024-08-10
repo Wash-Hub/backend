@@ -1,5 +1,6 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 import { CommonEntity } from '../../common/entities/common.entity';
+import { MapReview } from '../../map-review/entities/map-review.entity';
 
 @Entity()
 export class Map extends CommonEntity {
@@ -17,6 +18,11 @@ export class Map extends CommonEntity {
 
   @Column() //위도(y)
   public latitude: string;
+
+  @OneToMany(() => MapReview, (mapReview: MapReview) => mapReview.map, {
+    cascade: true,
+  })
+  public mapReview: MapReview[];
 }
 
 // address_name: '서울 양천구 신정동 1317',
