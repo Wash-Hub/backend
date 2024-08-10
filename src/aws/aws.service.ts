@@ -27,7 +27,6 @@ export class AwsService {
     const key = `${folder}/${Date.now()}_${path.basename(
       file.originalname,
     )}`.replace(/ /g, '');
-    console.log('key', key);
 
     const s3Object = await this.awsS3
       .putObject({
@@ -64,12 +63,9 @@ export class AwsService {
     return `https://${this.S3_BUCKET_NAME}.s3.amazonaws.com/${objectKey}`;
   }
 
-  public extractS3KeyFromUrl(url: string): string {
+  public extractS3KeyFromUrl(url: string, folder: string) {
     const urlParts = url.split('/');
-    const bucketIndex = urlParts.indexOf(this.S3_BUCKET_NAME);
-    if (bucketIndex === -1) {
-      throw new Error('Bucket name not found in URL');
-    }
-    return urlParts.slice(bucketIndex + 1).join('/');
+    const contentIndex = urlParts.indexOf(folder);
+    return urlParts.slice(contentIndex).join('/');
   }
 }
