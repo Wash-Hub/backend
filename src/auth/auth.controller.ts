@@ -58,6 +58,7 @@ export class AuthController {
   async getUserInfo(@Req() req: RequestWithUserInterface) {
     try {
       const { user } = req;
+      console.log(user);
       const data = await this.authService.userInfo(user.id);
       return { data };
     } catch (err) {
