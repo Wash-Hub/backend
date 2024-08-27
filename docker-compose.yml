@@ -9,6 +9,8 @@ services:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: didgksehd
       POSTGRES_DB: washhub
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - backend-networks
 
@@ -26,9 +28,19 @@ services:
       - 8000:8000
     depends_on:
       - postgres
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=2048
+    deploy:
+      resources:
+        limits:
+          memory: 1g
     networks:
       - backend-networks
 
 
 networks:
   backend-networks:
+
+volumes:
+  postgres-data:
+
