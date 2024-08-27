@@ -20,35 +20,35 @@ export class MapService {
     private readonly httpService: HttpService,
   ) {}
 
-  async cleanUpCoordiates() {
-    const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
-    const storeResponse = await axios.get(
-      'http://www.cleanup24.co.kr/sub/storelist/list.asp',
-    );
-    const $ = cheerio.load(storeResponse.data);
-    $('li.li2').each((index, element) => {
-      const imgElement = $(element).find('img').first();
-      const img = imgElement.attr('data-src'); // data-src 속성에서 이미지 URL을 추출
-      let title = $(element).find('h4.h4').text().trim();
-      const roadNames = $(element).find('p.p').text().trim();
-
-      console.log('dsda', img);
-
-      if (title.includes('런드리24')) {
-        title = title.replaceAll('런드리24', '').trim();
-      }
-      if (img && img.startsWith('http')) {
-        storeData.push({
-          img,
-          title,
-          roadNames,
-        });
-      }
-    });
-
-    // 데이터를 저장할 배열
-    const storeData = [];
-  }
+  // async cleanUpCoordiates() {
+  //   const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
+  //   const storeResponse = await axios.get(
+  //     'http://www.cleanup24.co.kr/sub/storelist/list.asp',
+  //   );
+  //   const $ = cheerio.load(storeResponse.data);
+  //   $('li.li2').each((index, element) => {
+  //     const imgElement = $(element).find('img').first();
+  //     const img = imgElement.attr('data-src'); // data-src 속성에서 이미지 URL을 추출
+  //     let title = $(element).find('h4.h4').text().trim();
+  //     const roadNames = $(element).find('p.p').text().trim();
+  //
+  //     console.log('dsda', img);
+  //
+  //     if (title.includes('런드리24')) {
+  //       title = title.replaceAll('런드리24', '').trim();
+  //     }
+  //     if (img && img.startsWith('http')) {
+  //       storeData.push({
+  //         img,
+  //         title,
+  //         roadNames,
+  //       });
+  //     }
+  //   });
+  //
+  //   // 데이터를 저장할 배열
+  //   const storeData = [];
+  // }
 
   async saveAllCoordinates(): Promise<Map[]> {
     const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
@@ -113,5 +113,15 @@ export class MapService {
     }
 
     return savedMaps;
+  }
+
+  async mapGetById(id: string) {
+    const map = await this.mapRepository
+      .createQueryBuilder('map')
+      .leftJoinAndSelect('map.mapReview', 'mapReview')
+      .where('map.id= :id', { id })
+      .orderBy('map.createdAt', 'ASC')
+      .getOne();
+    return map;
   }
 }

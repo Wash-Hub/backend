@@ -11,7 +11,7 @@ import {
 import { MapService } from './map.service';
 import { CreateMapDto } from './dto/create-map.dto';
 import { UpdateMapDto } from './dto/update-map.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Map')
 @Controller('map')
@@ -25,6 +25,15 @@ export class MapController {
   @Post('coordinates')
   async saveAllCoordinates() {
     return this.mapService.saveAllCoordinates();
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: '세탁소 상세페이지',
+    description: '세탁소 상세페이지',
+  })
+  async getMapId(@Param('id') id: string) {
+    return await this.mapService.mapGetById(id);
   }
 
   // @Post('cleanup')
