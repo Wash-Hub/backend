@@ -12,6 +12,7 @@ import { MapService } from './map.service';
 import { CreateMapDto } from './dto/create-map.dto';
 import { UpdateMapDto } from './dto/update-map.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { PageOptionsDto } from '../common/dtos/page-options.dto';
 
 @ApiTags('Map')
 @Controller('map')
@@ -32,8 +33,11 @@ export class MapController {
     summary: '세탁소 상세페이지',
     description: '세탁소 상세페이지',
   })
-  async getMapId(@Param('id') id: string) {
-    return await this.mapService.mapGetById(id);
+  async getMapId(
+    @Param('id') id: string,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ) {
+    return await this.mapService.mapGetById(id, pageOptionsDto);
   }
 
   // @Post('cleanup')

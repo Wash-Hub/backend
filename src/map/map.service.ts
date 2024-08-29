@@ -8,6 +8,10 @@ import { Repository } from 'typeorm';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { Map } from './entities/map.entity';
+import { PageOptionsDto } from '../common/dtos/page-options.dto';
+import { PageMetaDto } from '../common/dtos/page-meta.dto';
+import { PageDto } from '../common/dtos/page.dto';
+import { MapReview } from '../map-review/entities/map-review.entity';
 
 @Injectable()
 export class MapService {
@@ -16,6 +20,8 @@ export class MapService {
 
   constructor(
     @InjectRepository(Map) private mapRepository: Repository<Map>,
+    @InjectRepository(MapReview)
+    private mapReviewRepository: Repository<MapReview>,
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
   ) {}
@@ -115,13 +121,43 @@ export class MapService {
     return savedMaps;
   }
 
-  async mapGetById(id: string) {
+  // async mapGetById(id: string, pageOptionsDto: PageOptionsDto) {
+  //   const map = await this.mapRepository
+  //     .createQueryBuilder('map')
+  //     .leftJoinAndSelect('map.mapReview', 'mapReview')
+  //     .where('map.id= :id', { id })
+  //     .orderBy('map.createdAt', 'ASC')
+  //     .getOne();
+  //   return map;
+  // }
+
+  async mapGetById(id: string, pageOptionsDto: PageOptionsDto) {
+    // 1. map 정보를 가져오기
     const map = await this.mapRepository
       .createQueryBuilder('map')
-      .leftJoinAndSelect('map.mapReview', 'mapReview')
-      .where('map.id= :id', { id })
-      .orderBy('map.createdAt', 'ASC')
+      .where('map.id = :id', { id })
       .getOne();
-    return map;
+
+    if (!map) {
+      throw new Error('Map not found');
+    }
+
+    // 2. mapReview 정보를 페이징하여 가져오기
+    const [mapReviews, itemCount] = await this.mapReviewRepository
+      .createQueryBuilder('mapReview')
+      .where('mapReview.mapId = :id', { id })
+      .orderBy('mapReview.createdAt', pageOptionsDto.rev9ew)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take)
+      .getManyAndCount();
+
+    // 3. 페이징 메타데이터 생성
+    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+
+    // 4. map 정보와 함께 페이징된 mapReview 정보 반환
+    return {
+      map,
+      reviews: new PageDto(mapReviews, pageMetaDto),
+    };
   }
 }

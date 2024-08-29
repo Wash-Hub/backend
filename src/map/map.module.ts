@@ -5,10 +5,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Map } from './entities/map.entity';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
+import { MapReview } from '../map-review/entities/map-review.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Map]),
+    TypeOrmModule.forFeature([Map, MapReview]),
     HttpModule,
     ConfigModule.forRoot(),
   ],
