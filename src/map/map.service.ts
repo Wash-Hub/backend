@@ -58,7 +58,6 @@ export class MapService {
 
   async saveAllCoordinates(): Promise<Map[]> {
     const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
-    console.log('api', apiKey);
 
     // HTML 파싱을 위한 axios 호출
     const storeResponse = await axios.get('https://laundry24.net/storestatus/');
@@ -85,6 +84,7 @@ export class MapService {
         });
       }
     });
+    console.log('storeData', storeData);
 
     // 저장된 Map 객체를 저장할 배열
     const savedMaps: Map[] = [];
@@ -100,6 +100,7 @@ export class MapService {
       );
 
       const kakaoData = kakaoResponse.data;
+      console.log('kakaoData:', kakaoData);
       if (kakaoData.documents && kakaoData.documents.length > 0) {
         const addressName = kakaoData.documents[0].address.address_name;
         const longitude = kakaoData.documents[0].address.x;
@@ -112,12 +113,12 @@ export class MapService {
           latitude: latitude,
           picture: store.img,
         });
+        console.log('newMap', newMap);
 
         const savedMap = await this.mapRepository.save(newMap);
         savedMaps.push(savedMap);
       }
     }
-    console.log(savedMaps);
     return savedMaps;
   }
 
