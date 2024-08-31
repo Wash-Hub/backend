@@ -117,7 +117,7 @@ export class MapService {
         savedMaps.push(savedMap);
       }
     }
-
+    console.log(savedMaps);
     return savedMaps;
   }
 
