@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 
@@ -121,16 +121,6 @@ export class MapService {
     return savedMaps;
   }
 
-  // async mapGetById(id: string, pageOptionsDto: PageOptionsDto) {
-  //   const map = await this.mapRepository
-  //     .createQueryBuilder('map')
-  //     .leftJoinAndSelect('map.mapReview', 'mapReview')
-  //     .where('map.id= :id', { id })
-  //     .orderBy('map.createdAt', 'ASC')
-  //     .getOne();
-  //   return map;
-  // }
-
   async mapGetById(id: string, pageOptionsDto: PageOptionsDto) {
     // 1. map 정보를 가져오기
     const map = await this.mapRepository
@@ -159,5 +149,28 @@ export class MapService {
       map,
       reviews: new PageDto(mapReviews, pageMetaDto),
     };
+  }
+
+  async searchMap(
+    pageOptionsDto: PageOptionsDto,
+    searchQuery?: string,
+  ): Promise<PageDto<Map>> {
+    if (searchQuery) {
+      const queryBuilder = await this.mapRepository.createQueryBuilder('map');
+      queryBuilder.leftJoinAndSelect('map.mapReview', 'mapReview');
+      queryBuilder.where('map.placeName LIKE :searchQuery', {
+        searchQuery: `%${searchQuery}%`,
+      });
+      await queryBuilder
+        .orderBy('map.createdAt', pageOptionsDto.rev9ew)
+        .skip(pageOptionsDto.skip)
+        .take(pageOptionsDto.take);
+      const itemCount = await queryBuilder.getCount();
+      const { entities } = await queryBuilder.getRawAndEntities();
+      const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+      return new PageDto(entities, pageMetaDto);
+    } else {
+      throw new BadRequestException('검색어를 입력해야 합니다.');
+    }
   }
 }
