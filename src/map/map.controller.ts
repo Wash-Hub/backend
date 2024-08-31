@@ -11,7 +11,7 @@ import {
 import { MapService } from './map.service';
 import { CreateMapDto } from './dto/create-map.dto';
 import { UpdateMapDto } from './dto/update-map.dto';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PageOptionsDto } from '../common/dtos/page-options.dto';
 
 @ApiTags('Map')
@@ -26,6 +26,19 @@ export class MapController {
   @Post('coordinates')
   async saveAllCoordinates() {
     return this.mapService.saveAllCoordinates();
+  }
+
+  @Get('search')
+  @ApiOperation({
+    summary: '세탁소 검색기능',
+    description: '검색기능',
+  })
+  // @ApiQuery({ name: 'search', required: false, description: '검색 유형' })
+  async searchMovie(
+    @Query() pageOptionsDto: PageOptionsDto,
+    @Query('title') searchQuery?: string,
+  ) {
+    return await this.mapService.searchMap(pageOptionsDto, searchQuery);
   }
 
   @Get(':id')
