@@ -62,7 +62,7 @@ export class MapService {
     // HTML 파싱을 위한 axios 호출
     const storeResponse = await axios.get('https://laundry24.net/storestatus/');
     const $ = cheerio.load(storeResponse.data);
-
+    console.log('sd', storeResponse);
     // 데이터를 저장할 배열
     const storeData = [];
 
