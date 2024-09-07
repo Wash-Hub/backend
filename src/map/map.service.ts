@@ -26,43 +26,13 @@ export class MapService {
     private readonly httpService: HttpService,
   ) {}
 
-  // async cleanUpCoordiates() {
-  //   const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
-  //   const storeResponse = await axios.get(
-  //     'http://www.cleanup24.co.kr/sub/storelist/list.asp',
-  //   );
-  //   const $ = cheerio.load(storeResponse.data);
-  //   $('li.li2').each((index, element) => {
-  //     const imgElement = $(element).find('img').first();
-  //     const img = imgElement.attr('data-src'); // data-src 속성에서 이미지 URL을 추출
-  //     let title = $(element).find('h4.h4').text().trim();
-  //     const roadNames = $(element).find('p.p').text().trim();
-  //
-  //     console.log('dsda', img);
-  //
-  //     if (title.includes('런드리24')) {
-  //       title = title.replaceAll('런드리24', '').trim();
-  //     }
-  //     if (img && img.startsWith('http')) {
-  //       storeData.push({
-  //         img,
-  //         title,
-  //         roadNames,
-  //       });
-  //     }
-  //   });
-  //
-  //   // 데이터를 저장할 배열
-  //   const storeData = [];
-  // }
-
   async saveAllCoordinates(): Promise<Map[]> {
     const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
 
     // HTML 파싱을 위한 axios 호출
     const storeResponse = await axios.get('https://laundry24.net/storestatus/');
     const $ = cheerio.load(storeResponse.data);
-    console.log('sd', storeResponse);
+
     // 데이터를 저장할 배열
     const storeData = [];
 
@@ -73,9 +43,12 @@ export class MapService {
       let title = $(element).find('h4.h4').text().trim();
       const roadNames = $(element).find('p.p').text().trim();
 
+      // "런드리24"라는 문자열을 제거
       if (title.includes('런드리24')) {
         title = title.replaceAll('런드리24', '').trim();
       }
+
+      // 유효한 이미지 URL과 데이터를 가진 경우만 배열에 저장
       if (img && img.startsWith('http')) {
         storeData.push({
           img,
@@ -84,41 +57,51 @@ export class MapService {
         });
       }
     });
-    console.log('storeData', storeData);
 
     // 저장된 Map 객체를 저장할 배열
     const savedMaps: Map[] = [];
     const titleName = '런드리24 ';
 
-    // 새로운 맵 엔트리 생성 및 저장
+    // 카카오 API를 통해 좌표 정보를 가져오고, Map 엔티티로 변환하여 저장
     for (const store of storeData) {
-      const kakaoResponse = await firstValueFrom(
-        this.httpService.get(this.kakaoApiUrl, {
-          params: { query: store.roadNames },
-          headers: { Authorization: `KakaoAK ${apiKey}` },
-        }),
-      );
+      try {
+        const kakaoResponse = await firstValueFrom(
+          this.httpService.get(this.kakaoApiUrl, {
+            params: { query: store.roadNames },
+            headers: { Authorization: `KakaoAK ${apiKey}` },
+          }),
+        );
 
-      const kakaoData = kakaoResponse.data;
-      console.log('kakaoData:', kakaoData);
-      if (kakaoData.documents && kakaoData.documents.length > 0) {
-        const addressName = kakaoData.documents[0].address.address_name;
-        const longitude = kakaoData.documents[0].address.x;
-        const latitude = kakaoData.documents[0].address.y;
+        const kakaoData = kakaoResponse.data;
 
-        const newMap = this.mapRepository.create({
-          placeName: titleName + store.title,
-          roadName: addressName,
-          longitude: longitude,
-          latitude: latitude,
-          picture: store.img,
-        });
-        console.log('newMap', newMap);
+        // 좌표 정보가 존재하는 경우에만 처리
+        if (kakaoData.documents && kakaoData.documents.length > 0) {
+          const addressName = kakaoData.documents[0].address.address_name;
+          const longitude = kakaoData.documents[0].address.x;
+          const latitude = kakaoData.documents[0].address.y;
 
-        const savedMap = await this.mapRepository.save(newMap);
-        savedMaps.push(savedMap);
+          // 새로운 Map 엔티티 생성
+          const newMap = this.mapRepository.create({
+            placeName: titleName + store.title,
+            roadName: addressName,
+            longitude: longitude,
+            latitude: latitude,
+            picture: store.img,
+          });
+
+          // 엔티티 저장
+          const savedMap = await this.mapRepository.save(newMap);
+          savedMaps.push(savedMap);
+        }
+      } catch (error) {
+        console.error(
+          `Error fetching coordinates for ${store.roadNames}:`,
+          error,
+        );
       }
     }
+
+    // 저장된 지도 데이터를 반환
     return savedMaps;
   }
 
