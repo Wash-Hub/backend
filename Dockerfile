@@ -4,6 +4,17 @@
 
 FROM node:20-alpine As development
 
+# Puppeteer 의존성 설치
+RUN apk update && apk add --no-cache \
+  chromium \
+  nss \
+  freetype \
+  harfbuzz \
+  ttf-freefont
+
+# puppeteer에 브라우저 경로 알려주기
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Create app directory
 WORKDIR /usr/src/app
 
