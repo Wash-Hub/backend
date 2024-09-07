@@ -9,7 +9,6 @@ services:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: didgksehd
       POSTGRES_DB: washhub
-      POSTGRES_HOST: postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
@@ -34,7 +33,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2g
+          memory: 5g
     networks:
       - backend-networks
 
