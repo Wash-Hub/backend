@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { MapReviewModule } from './map-review/map-review.module';
 import { AwsModule } from './aws/aws.module';
 import { MapModule } from './map/map.module';
+import { BookmarkModule } from './bookmark/bookmark.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MapModule } from './map/map.module';
     MapModule,
     MapReviewModule,
     AwsModule,
+    BookmarkModule,
   ],
   controllers: [AppController],
   providers: [AppService],
