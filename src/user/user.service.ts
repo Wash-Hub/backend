@@ -46,13 +46,6 @@ export class UserService {
     if (isRefreshTokenMatching) return user;
   }
 
-  //로그아웃시 실행되는 함수
-  async removeRefreshToken(userId: string) {
-    return this.userRepository.update(userId, {
-      currentHashedRefreshToken: null,
-    });
-  }
-
   async deleteByUser(id: string) {
     const user = await this.userRepository.findOne({
       where: { id },
@@ -94,6 +87,11 @@ export class UserService {
     console.log(currentHashedRefreshToken);
     await this.userRepository.update(userId, {
       currentHashedRefreshToken,
+    });
+  }
+  async removeRefreshToken(userId: string) {
+    return this.userRepository.update(userId, {
+      currentHashedRefreshToken: null,
     });
   }
 }
