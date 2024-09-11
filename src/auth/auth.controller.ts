@@ -94,4 +94,12 @@ export class AuthController {
     const user = req.user;
     await this.authService.deletedUser(user.id);
   }
+
+  @UseGuards(JwtAccessAuthGuard)
+  @ApiBearerAuth('access-token')
+  @Post('logout')
+  @HttpCode(200)
+  async logout(@Req() req: RequestWithUserInterface) {
+    await this.userService.removeRefreshToken(req.user.id);
+  }
 }
