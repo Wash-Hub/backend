@@ -1,4 +1,4 @@
-import { Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CommonEntity } from '../../common/entities/common.entity';
 import { User } from '../../user/entities/user.entity';
 import { Map } from '../../map/entities/map.entity';
@@ -16,4 +16,7 @@ export class Bookmark extends CommonEntity {
   })
   @JoinColumn()
   public map?: Map;
+
+  @Column({ default: false })
+  public isBookMark: boolean;
 }
