@@ -1,6 +1,7 @@
 import { Column, Entity, OneToMany } from 'typeorm';
 import { CommonEntity } from '../../common/entities/common.entity';
 import { MapReview } from '../../map-review/entities/map-review.entity';
+import { Bookmark } from '../../bookmark/entities/bookmark.entity';
 
 @Entity()
 export class Map extends CommonEntity {
@@ -23,6 +24,11 @@ export class Map extends CommonEntity {
     cascade: true,
   })
   public mapReview: MapReview[];
+
+  @OneToMany(() => Bookmark, (bookmark: Bookmark) => bookmark.map, {
+    cascade: true,
+  })
+  public bookmark: Bookmark[];
 }
 
 // address_name: '서울 양천구 신정동 1317',

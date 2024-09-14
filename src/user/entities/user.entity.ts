@@ -6,6 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import { InternalServerErrorException } from '@nestjs/common';
 import { Exclude } from 'class-transformer';
 import { MapReview } from '../../map-review/entities/map-review.entity';
+import { Bookmark } from '../../bookmark/entities/bookmark.entity';
 
 @Entity()
 export class User extends CommonEntity {
@@ -27,6 +28,11 @@ export class User extends CommonEntity {
 
   @Column({ nullable: true })
   public nickname?: string;
+
+  @OneToMany(() => Bookmark, (bookmark: Bookmark) => bookmark.user, {
+    cascade: true,
+  })
+  public bookmark: Bookmark[];
 
   @Column({ nullable: true })
   @Exclude()
