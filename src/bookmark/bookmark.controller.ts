@@ -3,7 +3,6 @@ import {
   Req,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
@@ -39,5 +38,16 @@ export class BookmarkController {
       createBookmarkDto,
     );
     return bookMark;
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAccessAuthGuard)
+  @ApiOperation({
+    summary: '북마크 취소',
+    description: '북마크 취소 map id 입력',
+  })
+  async bookMarkDelete(@Param('id') mapId: string) {
+    await this.bookmarkService.deleteBookMark(mapId);
   }
 }
