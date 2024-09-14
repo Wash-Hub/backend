@@ -14,6 +14,7 @@ import { AwsService } from '../aws/aws.service';
 import * as AWS from 'aws-sdk';
 import * as path from 'path';
 import { PromiseResult } from 'aws-sdk/lib/request';
+import { Map } from '../map/entities/map.entity';
 
 @Injectable()
 export class MapReviewService {
@@ -22,6 +23,8 @@ export class MapReviewService {
   constructor(
     @InjectRepository(MapReview)
     private mapReviewRepository: Repository<MapReview>,
+    @InjectRepository(Map)
+    private mapRepository: Repository<Map>,
     private readonly awsService: AwsService,
   ) {}
 
@@ -46,34 +49,51 @@ export class MapReviewService {
       ...createMapReviewDto,
       img: uploadedImagesUrls,
     });
+
+    const mapId = createMapReviewDto.map;
     await this.mapReviewRepository.save(newReview);
+
+    await this.mapRepository
+      .createQueryBuilder()
+      .update(Map)
+      .set({ reviewCount: () => '"reviewCount" + 1' }) // 따옴표 문제 수정
+      .where('id = :mapId', { mapId })
+      .execute();
+
     return newReview;
   }
 
   async deleteReview(id: string) {
-    try {
-      const review = await this.mapReviewRepository.findOne({
-        where: { id },
-      });
+    const review = await this.mapReviewRepository.findOne({
+      where: { id },
+      relations: ['map'], // map 관계를 로드
+    });
 
-      if (!review) {
-        throw new NotFoundException('Review not found');
-      }
-      await Promise.all(
-        review.img.map(async (imageUrl) => {
-          const key = await this.awsService.extractS3KeyFromUrl(
-            imageUrl,
-            this.folderName,
-          );
-          console.log('key', key);
-          await this.awsService.deleteS3Object(key);
-        }),
-      );
-
-      await this.mapReviewRepository.delete(id);
-      return 'deleted';
-    } catch (err) {
-      throw new NotFoundException('Failed to delete review');
+    if (!review) {
+      throw new NotFoundException('Review not found');
     }
+    await Promise.all(
+      review.img.map(async (imageUrl) => {
+        const key = await this.awsService.extractS3KeyFromUrl(
+          imageUrl,
+          this.folderName,
+        );
+        console.log('key', key);
+        await this.awsService.deleteS3Object(key);
+      }),
+    );
+
+    const mapId = review.map.id;
+    console.log(mapId);
+
+    await this.mapRepository
+      .createQueryBuilder()
+      .update(Map)
+      .set({ reviewCount: () => '"reviewCount" - 1' })
+      .where('id =:mapId', { mapId })
+      .execute();
+
+    await this.mapReviewRepository.delete(id);
+    return 'deleted';
   }
 }
