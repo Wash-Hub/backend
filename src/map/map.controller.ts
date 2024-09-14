@@ -18,11 +18,6 @@ import { PageOptionsDto } from '../common/dtos/page-options.dto';
 @Controller('map')
 export class MapController {
   constructor(private readonly mapService: MapService) {}
-  //
-  // @Post('coordinates')
-  // async getCoordinates(@Query('address') address: string) {
-  //   return this.mapService.getCoordinatesByAddress(address);
-  // }
   @Post('coordinates')
   async saveAllCoordinates() {
     return this.mapService.saveAllCoordinates();
@@ -51,6 +46,17 @@ export class MapController {
     @Query() pageOptionsDto: PageOptionsDto,
   ) {
     return await this.mapService.mapGetById(id, pageOptionsDto);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: '세탁소 실시간 지도 불러오기',
+    description:
+      '실시간으로 쿼리를 받아서 일정거리에따라 세탁소를 보여주는 api',
+  })
+  async GetMap(@Query('x') x?: string, @Query('y') y?: string) {
+    const map = await this.mapService.getMap(x, y);
+    return map;
   }
 
   // @Post('cleanup')
