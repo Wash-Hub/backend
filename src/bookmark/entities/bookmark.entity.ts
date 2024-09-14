@@ -16,7 +16,4 @@ export class Bookmark extends CommonEntity {
   })
   @JoinColumn()
   public map?: Map;
-
-  @Column({ default: false })
-  public isBookMark: boolean;
 }
