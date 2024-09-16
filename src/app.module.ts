@@ -9,6 +9,7 @@ import { MapReviewModule } from './map-review/map-review.module';
 import { AwsModule } from './aws/aws.module';
 import { MapModule } from './map/map.module';
 import { BookmarkModule } from './bookmark/bookmark.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { BookmarkModule } from './bookmark/bookmark.module';
     MapReviewModule,
     AwsModule,
     BookmarkModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],
