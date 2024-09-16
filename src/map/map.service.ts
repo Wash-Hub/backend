@@ -13,6 +13,7 @@ import { PageMetaDto } from '../common/dtos/page-meta.dto';
 import { PageDto } from '../common/dtos/page.dto';
 import { MapReview } from '../map-review/entities/map-review.entity';
 import { Bookmark } from '../bookmark/entities/bookmark.entity';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class MapService {
@@ -28,7 +29,77 @@ export class MapService {
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
   ) {}
-  async saveAllCoordinates(): Promise<Map[]> {
+  // async saveAllCoordinates(): Promise<Map[]> {
+  //   const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
+  //
+  //   // HTML 파싱을 위한 axios 호출
+  //   const storeResponse = await axios.get('https://laundry24.net/storestatus/');
+  //   const $ = cheerio.load(storeResponse.data);
+  //   // 데이터를 저장할 배열
+  //   const storeData = [];
+  //
+  //   // li 요소를 순회하면서 data-src, title, description 추출
+  //   $('li.li2').each((index, element) => {
+  //     const imgElement = $(element).find('img').first();
+  //     const img = imgElement.attr('data-src'); // data-src 속성에서 이미지 URL을 추출
+  //     let title = $(element).find('h4.h4').text().trim();
+  //     const roadNames = $(element).find('p.p').text().trim();
+  //
+  //     // "런드리24"라는 문자열을 제거
+  //     if (title.includes('런드리24')) {
+  //       title = title.replaceAll('런드리24', '').trim();
+  //     }
+  //
+  //     // 유효한 이미지 URL과 데이터를 가진 경우만 배열에 저장
+  //     if (img && img.startsWith('http')) {
+  //       storeData.push({
+  //         img,
+  //         title,
+  //         roadNames,
+  //       });
+  //     }
+  //   });
+  //
+  //   // 저장된 Map 객체를 저장할 배열
+  //   const savedMaps: Map[] = [];
+  //   const titleName = '런드리24 ';
+  //
+  //   // 카카오 API를 통해 좌표 정보를 가져오고, Map 엔티티로 변환하여 저장
+  //   for (const store of storeData) {
+  //     const kakaoResponse = await firstValueFrom(
+  //       this.httpService.get(this.kakaoApiUrl, {
+  //         params: { query: store.roadNames },
+  //         headers: { Authorization: `KakaoAK ${apiKey}` },
+  //       }),
+  //     );
+  //
+  //     const kakaoData = kakaoResponse.data;
+  //
+  //     // 좌표 정보가 존재하는 경우에만 처리
+  //     if (kakaoData.documents && kakaoData.documents.length > 0) {
+  //       const addressName = kakaoData.documents[0].address.address_name;
+  //       const longitude = parseFloat(kakaoData.documents[0].address.x); // string을 number로 변환
+  //       const latitude = parseFloat(kakaoData.documents[0].address.y); // string을 number로 변환
+  //
+  //       // 새로운 Map 엔티티 생성
+  //       const newMap = this.mapRepository.create({
+  //         placeName: titleName + store.title,
+  //         roadName: addressName,
+  //         longitude: longitude, // 숫자 타입으로 저장
+  //         latitude: latitude, // 숫자 타입으로 저장
+  //         picture: store.img,
+  //       });
+  //
+  //       // 엔티티 저장
+  //       const savedMap = await this.mapRepository.save(newMap);
+  //       savedMaps.push(savedMap);
+  //     }
+  //   }
+  //   console.log('2313', savedMaps);
+  //   return savedMaps;
+  // }
+
+  async Coordinates(): Promise<Map[]> {
     const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
 
     // HTML 파싱을 위한 axios 호출
@@ -81,22 +152,29 @@ export class MapService {
         const longitude = parseFloat(kakaoData.documents[0].address.x); // string을 number로 변환
         const latitude = parseFloat(kakaoData.documents[0].address.y); // string을 number로 변환
 
-        // 새로운 Map 엔티티 생성
-        const newMap = this.mapRepository.create({
-          placeName: titleName + store.title,
-          roadName: addressName,
-          longitude: longitude, // 숫자 타입으로 저장
-          latitude: latitude, // 숫자 타입으로 저장
-          picture: store.img,
+        // placeName이 이미 존재하는지 확인
+        const existingMap = await this.mapRepository.findOne({
+          where: { placeName: titleName + store.title },
         });
 
-        // 엔티티 저장
-        const savedMap = await this.mapRepository.save(newMap);
-        savedMaps.push(savedMap);
+        // 존재하지 않는 경우에만 새로운 Map 엔티티 생성 및 저장
+        if (!existingMap) {
+          const newMap = this.mapRepository.create({
+            placeName: titleName + store.title,
+            roadName: addressName,
+            longitude: longitude, // 숫자 타입으로 저장
+            latitude: latitude, // 숫자 타입으로 저장
+            picture: store.img,
+          });
+
+          // 엔티티 저장
+          const savedMap = await this.mapRepository.save(newMap);
+          savedMaps.push(savedMap);
+        }
       }
     }
 
-    // 저장된 지도 데이터를 반환
+    console.log('2313', savedMaps);
     return savedMaps;
   }
 
@@ -167,42 +245,6 @@ export class MapService {
     }
   }
 
-  // async getMap(x?: string, y?: string, user?: { id: string }) {
-  //   const longitude = parseFloat(x);
-  //   const latitude = parseFloat(y);
-  //
-  //   // 0.5 범위 내의 데이터를 검색 (문자열을 숫자로 변환)
-  //   const maps = await this.mapRepository.find({
-  //     where: {
-  //       longitude: Between(
-  //         (longitude - 0.5).toString(),
-  //         (longitude + 0.5).toString(),
-  //       ),
-  //       latitude: Between(
-  //         (latitude - 0.5).toString(),
-  //         (latitude + 0.5).toString(),
-  //       ),
-  //     },
-  //   });
-  //
-  //   // 사용자가 있으면 북마크 정보를 조회하여 isBookMark 설정
-  //   if (user) {
-  //     const bookmarks = await this.bookmarkRepository.find({
-  //       where: { user: { id: user.id } },
-  //       relations: ['map'], // 북마크한 지도의 정보를 함께 가져옴
-  //     });
-  //
-  //     const bookmarkedMapIds = bookmarks.map((bookmark) => bookmark.map.id);
-  //
-  //     // 가져온 지도 리스트에서 북마크 여부를 설정
-  //     maps.forEach((map) => {
-  //       map.isBookMark = bookmarkedMapIds.includes(map.id);
-  //     });
-  //   }
-  //
-  //   return maps;
-  // }
-
   async getMap(x?: string, y?: string, user?: { id: string }) {
     const longitude = parseFloat(x);
     const latitude = parseFloat(y);
@@ -210,8 +252,8 @@ export class MapService {
     // 0.5 범위 내의 데이터를 검색 (숫자 그대로 사용)
     const maps = await this.mapRepository.find({
       where: {
-        longitude: Between(longitude - 0.5, longitude + 0.5),
-        latitude: Between(latitude - 0.5, latitude + 0.5),
+        longitude: Between(longitude - 0.1, longitude + 0.1),
+        latitude: Between(latitude - 0.1, latitude + 0.1),
       },
     });
 
@@ -231,5 +273,11 @@ export class MapService {
     }
 
     return maps;
+  }
+
+  @Cron('0 0 0 1 * *')
+  handleCron() {
+    console.log('$$$$$$');
+    this.Coordinates();
   }
 }
