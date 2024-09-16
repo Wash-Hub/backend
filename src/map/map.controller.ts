@@ -2,17 +2,20 @@ import {
   Controller,
   Get,
   Post,
-  Body,
+  Req,
   Patch,
   Param,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { MapService } from './map.service';
 import { CreateMapDto } from './dto/create-map.dto';
 import { UpdateMapDto } from './dto/update-map.dto';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PageOptionsDto } from '../common/dtos/page-options.dto';
+import { JwtOptionalAuthGuard } from '../auth/guard/jwtOptional-auth.guard';
+import { RequestWithUserInterface } from '../auth/requestWithUser.interface';
 
 @ApiTags('Map')
 @Controller('map')
@@ -28,6 +31,7 @@ export class MapController {
     summary: '세탁소 검색기능',
     description: '검색기능',
   })
+  @UseGuards(JwtOptionalAuthGuard)
   // @ApiQuery({ name: 'search', required: false, description: '검색 유형' })
   async searchMovie(
     @Query() pageOptionsDto: PageOptionsDto,
@@ -41,11 +45,14 @@ export class MapController {
     summary: '세탁소 상세페이지',
     description: '세탁소 상세페이지',
   })
+  @UseGuards(JwtOptionalAuthGuard)
   async getMapId(
     @Param('id') id: string,
     @Query() pageOptionsDto: PageOptionsDto,
+    @Req() req: RequestWithUserInterface,
   ) {
-    return await this.mapService.mapGetById(id, pageOptionsDto);
+    const user = req.user;
+    return await this.mapService.mapGetById(id, pageOptionsDto, user);
   }
 
   @Get()
@@ -54,8 +61,14 @@ export class MapController {
     description:
       '실시간으로 쿼리를 받아서 일정거리에따라 세탁소를 보여주는 api',
   })
-  async GetMap(@Query('x') x?: string, @Query('y') y?: string) {
-    const map = await this.mapService.getMap(x, y);
+  @UseGuards(JwtOptionalAuthGuard)
+  async GetMap(
+    @Query('x') x?: string,
+    @Query('y') y?: string,
+    @Req() req?: RequestWithUserInterface,
+  ) {
+    const user = req.user;
+    const map = await this.mapService.getMap(x, y, user);
     return map;
   }
 
