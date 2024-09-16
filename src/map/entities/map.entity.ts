@@ -14,12 +14,11 @@ export class Map extends CommonEntity {
   @Column() //사진
   public picture?: string;
 
-  @Column() // 경도 (x)
-  public longitude: string;
+  @Column({ type: 'double precision' }) // 경도 (x)
+  public longitude: number;
 
-  @Column() //위도(y)
-  public latitude: string;
-
+  @Column({ type: 'double precision' }) // 위도 (y)
+  public latitude: number;
   @OneToMany(() => MapReview, (mapReview: MapReview) => mapReview.map, {
     cascade: true,
   })
