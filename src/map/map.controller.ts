@@ -23,7 +23,7 @@ export class MapController {
   constructor(private readonly mapService: MapService) {}
   @Post('coordinates')
   async saveAllCoordinates() {
-    return this.mapService.saveAllCoordinates();
+    return this.mapService.Coordinates();
   }
 
   @Get('search')
