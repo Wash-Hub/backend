@@ -38,10 +38,10 @@ export class User extends CommonEntity {
   @Exclude()
   public currentHashedRefreshToken?: string;
 
-  // @OneToMany(() => MapReview, (mapReview: MapReview) => mapReview.user, {
-  //   cascade: true,
-  // })
-  // public mapReview: MapReview[];
+  @OneToMany(() => MapReview, (mapReview: MapReview) => mapReview.user, {
+    cascade: true,
+  })
+  public mapReview: MapReview[];
 
   @BeforeInsert()
   async beforeSaveFunction(): Promise<void> {

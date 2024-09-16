@@ -25,9 +25,9 @@ export class MapReview extends CommonEntity {
   @Column({ default: 0 })
   public views: number;
 
-  // @ManyToOne(() => User, (user: User) => user.mapReview, {
-  //   onDelete: 'CASCADE',
-  // })
-  // @JoinColumn()
-  // public user: User;
+  @ManyToOne(() => User, (user: User) => user.mapReview, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn()
+  public user: User;
 }
