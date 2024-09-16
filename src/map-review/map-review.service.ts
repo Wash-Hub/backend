@@ -32,7 +32,7 @@ export class MapReviewService {
 
   async createReview(
     createMapReviewDto: CreateMapReviewDto,
-    // user: User,
+    user: User,
     files: Express.Multer.File[],
   ) {
     const uploadedImagesUrls = await Promise.all(
@@ -45,7 +45,7 @@ export class MapReviewService {
       }),
     );
     const newReview = await this.mapReviewRepository.create({
-      // user,
+      user,
       ...createMapReviewDto,
       img: uploadedImagesUrls,
     });
