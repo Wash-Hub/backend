@@ -6,10 +6,11 @@ import { Map } from './entities/map.entity';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
 import { MapReview } from '../map-review/entities/map-review.entity';
+import { Bookmark } from '../bookmark/entities/bookmark.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Map, MapReview]),
+    TypeOrmModule.forFeature([Map, MapReview, Bookmark]),
     HttpModule,
     ConfigModule.forRoot(),
   ],

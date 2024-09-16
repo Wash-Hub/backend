@@ -47,10 +47,9 @@ export class MapReviewController {
 
   @Delete(':id')
   @ApiBearerAuth('access-token')
-  // @UseGuards(JwtAccessAuthGuard)
+  @UseGuards(JwtAccessAuthGuard)
   @ApiOperation({ summary: '삭제', description: '리뷰삭제' })
   async deleteReview(@Param('id') id: string) {
-    const review = await this.mapReviewService.deleteReview(id);
-    return review;
+    return await this.mapReviewService.deleteReview(id);
   }
 }

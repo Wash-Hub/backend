@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import * as puppeteer from 'puppeteer';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { Map } from './entities/map.entity';
@@ -12,6 +12,7 @@ import { PageOptionsDto } from '../common/dtos/page-options.dto';
 import { PageMetaDto } from '../common/dtos/page-meta.dto';
 import { PageDto } from '../common/dtos/page.dto';
 import { MapReview } from '../map-review/entities/map-review.entity';
+import { Bookmark } from '../bookmark/entities/bookmark.entity';
 
 @Injectable()
 export class MapService {
@@ -20,6 +21,8 @@ export class MapService {
 
   constructor(
     @InjectRepository(Map) private mapRepository: Repository<Map>,
+    @InjectRepository(Bookmark)
+    private bookmarkRepository: Repository<Bookmark>,
     @InjectRepository(MapReview)
     private mapReviewRepository: Repository<MapReview>,
     private readonly configService: ConfigService,
@@ -105,104 +108,11 @@ export class MapService {
     return savedMaps;
   }
 
-  // async saveAllCoordinates(): Promise<Map[]> {
-  //   const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
-  //
-  //   // Puppeteer를 사용하여 페이지 렌더링
-  //   const browser = await puppeteer.launch({
-  //     executablePath: '/usr/bin/chromium-browser',
-  //     headless: true, // headless 모드로 실행
-  //     args: ['--no-sandbox', '--disable-setuid-sandbox'], // Docker에서 사용할 경우 추가 옵션
-  //   });
-  //   const page = await browser.newPage();
-  //
-  //   // 해당 URL에 접속
-  //   await page.goto('https://laundry24.net/storestatus/', {
-  //     waitUntil: 'networkidle0', // 네트워크 요청이 없는 상태를 기다림
-  //   });
-  //
-  //   // 페이지의 HTML 소스 가져오기
-  //   const content = await page.content();
-  //
-  //   // cheerio로 HTML 파싱
-  //   const $ = cheerio.load(content);
-  //
-  //   // 브라우저 종료
-  //   await browser.close();
-  //
-  //   // 데이터를 저장할 배열
-  //   const storeData = [];
-  //
-  //   // li 요소를 순회하면서 data-src, title, description 추출
-  //   $('li.li2').each((index, element) => {
-  //     const imgElement = $(element).find('img').first();
-  //     const img = imgElement.attr('data-src'); // data-src 속성에서 이미지 URL을 추출
-  //     let title = $(element).find('h4.h4').text().trim();
-  //     const roadNames = $(element).find('p.p').text().trim();
-  //
-  //     // "런드리24"라는 문자열을 제거
-  //     if (title.includes('런드리24')) {
-  //       title = title.replaceAll('런드리24', '').trim();
-  //     }
-  //
-  //     // 유효한 이미지 URL과 데이터를 가진 경우만 배열에 저장
-  //     if (img && img.startsWith('http')) {
-  //       storeData.push({
-  //         img,
-  //         title,
-  //         roadNames,
-  //       });
-  //     }
-  //   });
-  //
-  //   // 저장된 Map 객체를 저장할 배열
-  //   const savedMaps: Map[] = [];
-  //   const titleName = '런드리24 ';
-  //
-  //   // 카카오 API를 통해 좌표 정보를 가져오고, Map 엔티티로 변환하여 저장
-  //   for (const store of storeData) {
-  //     try {
-  //       const kakaoResponse = await firstValueFrom(
-  //         this.httpService.get(this.kakaoApiUrl, {
-  //           params: { query: store.roadNames },
-  //           headers: { Authorization: `KakaoAK ${apiKey}` },
-  //         }),
-  //       );
-  //
-  //       const kakaoData = kakaoResponse.data;
-  //
-  //       // 좌표 정보가 존재하는 경우에만 처리
-  //       if (kakaoData.documents && kakaoData.documents.length > 0) {
-  //         const addressName = kakaoData.documents[0].address.address_name;
-  //         const longitude = kakaoData.documents[0].address.x;
-  //         const latitude = kakaoData.documents[0].address.y;
-  //
-  //         // 새로운 Map 엔티티 생성
-  //         const newMap = this.mapRepository.create({
-  //           placeName: titleName + store.title,
-  //           roadName: addressName,
-  //           longitude: longitude,
-  //           latitude: latitude,
-  //           picture: store.img,
-  //         });
-  //
-  //         // 엔티티 저장
-  //         const savedMap = await this.mapRepository.save(newMap);
-  //         savedMaps.push(savedMap);
-  //       }
-  //     } catch (error) {
-  //       console.error(
-  //         `Error fetching coordinates for ${store.roadNames}:`,
-  //         error,
-  //       );
-  //     }
-  //   }
-  //
-  //   // 저장된 지도 데이터를 반환
-  //   return savedMaps;
-  // }
-
-  async mapGetById(id: string, pageOptionsDto: PageOptionsDto) {
+  async mapGetById(
+    id: string,
+    pageOptionsDto: PageOptionsDto,
+    user?: { id: string },
+  ) {
     // 1. map 정보를 가져오기
     const map = await this.mapRepository
       .createQueryBuilder('map')
@@ -213,7 +123,16 @@ export class MapService {
       throw new Error('Map not found');
     }
 
-    // 2. mapReview 정보를 페이징하여 가져오기
+    // 2. 사용자가 있으면 북마크 여부 확인
+    if (user) {
+      const bookmark = await this.bookmarkRepository.findOne({
+        where: { map: { id }, user: { id: user.id } },
+      });
+
+      map.isBookMark = !!bookmark; // 북마크가 있으면 true, 없으면 false
+    }
+
+    // 3. mapReview 정보를 페이징하여 가져오기
     const [mapReviews, itemCount] = await this.mapReviewRepository
       .createQueryBuilder('mapReview')
       .where('mapReview.mapId = :id', { id })
@@ -222,10 +141,10 @@ export class MapService {
       .take(pageOptionsDto.take)
       .getManyAndCount();
 
-    // 3. 페이징 메타데이터 생성
+    // 4. 페이징 메타데이터 생성
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
 
-    // 4. map 정보와 함께 페이징된 mapReview 정보 반환
+    // 5. map 정보와 함께 페이징된 mapReview 정보 반환
     return {
       map,
       reviews: new PageDto(mapReviews, pageMetaDto),
@@ -253,5 +172,41 @@ export class MapService {
     } else {
       throw new BadRequestException('검색어를 입력해야 합니다.');
     }
+  }
+
+  async getMap(x?: string, y?: string, user?: { id: string }) {
+    const longitude = parseFloat(x);
+    const latitude = parseFloat(y);
+
+    // 0.5 범위 내의 데이터를 검색 (문자열을 숫자로 변환)
+    const maps = await this.mapRepository.find({
+      where: {
+        longitude: Between(
+          (longitude - 0.5).toString(),
+          (longitude + 0.5).toString(),
+        ),
+        latitude: Between(
+          (latitude - 0.5).toString(),
+          (latitude + 0.5).toString(),
+        ),
+      },
+    });
+
+    // 사용자가 있으면 북마크 정보를 조회하여 isBookMark 설정
+    if (user) {
+      const bookmarks = await this.bookmarkRepository.find({
+        where: { user: { id: user.id } },
+        relations: ['map'], // 북마크한 지도의 정보를 함께 가져옴
+      });
+
+      const bookmarkedMapIds = bookmarks.map((bookmark) => bookmark.map.id);
+
+      // 가져온 지도 리스트에서 북마크 여부를 설정
+      maps.forEach((map) => {
+        map.isBookMark = bookmarkedMapIds.includes(map.id);
+      });
+    }
+
+    return maps;
   }
 }
