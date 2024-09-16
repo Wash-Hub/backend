@@ -23,12 +23,21 @@ export class BookmarkService {
       user,
       ...createBookmarkDto,
     });
-    const bookMark = await this.bookmarkRepository.findOne({
-      where: { id: newBookMark.id },
-    });
-    if (bookMark) {
-      throw new ConflictException('bookmark already');
+    const book = await this.bookmarkRepository
+      .createQueryBuilder('bookmark')
+      .where('bookmark.user = :userId', { userId: user.id })
+      .andWhere('bookmark.map= :mapId', { mapId: newBookMark.map })
+      .getCount();
+    if (book > 0) {
+      throw new ConflictException('already bookmark');
     }
+
+    // const bookMark = await this.bookmarkRepository.findOne({
+    //   where: { id: newBookMark.id },
+    // });
+    // if (bookMark) {
+    //   throw new ConflictException('bookmark already');
+    // }
     await this.bookmarkRepository.save(newBookMark);
     return newBookMark;
   }

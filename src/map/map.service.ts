@@ -28,14 +28,13 @@ export class MapService {
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
   ) {}
-
   async saveAllCoordinates(): Promise<Map[]> {
     const apiKey = this.configService.get<string>('KAKAO_AUTH_CLIENTID');
 
     // HTML 파싱을 위한 axios 호출
     const storeResponse = await axios.get('https://laundry24.net/storestatus/');
     const $ = cheerio.load(storeResponse.data);
-    console.log(storeResponse);
+
     // 데이터를 저장할 배열
     const storeData = [];
 
@@ -67,40 +66,33 @@ export class MapService {
 
     // 카카오 API를 통해 좌표 정보를 가져오고, Map 엔티티로 변환하여 저장
     for (const store of storeData) {
-      try {
-        const kakaoResponse = await firstValueFrom(
-          this.httpService.get(this.kakaoApiUrl, {
-            params: { query: store.roadNames },
-            headers: { Authorization: `KakaoAK ${apiKey}` },
-          }),
-        );
+      const kakaoResponse = await firstValueFrom(
+        this.httpService.get(this.kakaoApiUrl, {
+          params: { query: store.roadNames },
+          headers: { Authorization: `KakaoAK ${apiKey}` },
+        }),
+      );
 
-        const kakaoData = kakaoResponse.data;
+      const kakaoData = kakaoResponse.data;
 
-        // 좌표 정보가 존재하는 경우에만 처리
-        if (kakaoData.documents && kakaoData.documents.length > 0) {
-          const addressName = kakaoData.documents[0].address.address_name;
-          const longitude = kakaoData.documents[0].address.x;
-          const latitude = kakaoData.documents[0].address.y;
+      // 좌표 정보가 존재하는 경우에만 처리
+      if (kakaoData.documents && kakaoData.documents.length > 0) {
+        const addressName = kakaoData.documents[0].address.address_name;
+        const longitude = parseFloat(kakaoData.documents[0].address.x); // string을 number로 변환
+        const latitude = parseFloat(kakaoData.documents[0].address.y); // string을 number로 변환
 
-          // 새로운 Map 엔티티 생성
-          const newMap = this.mapRepository.create({
-            placeName: titleName + store.title,
-            roadName: addressName,
-            longitude: longitude,
-            latitude: latitude,
-            picture: store.img,
-          });
+        // 새로운 Map 엔티티 생성
+        const newMap = this.mapRepository.create({
+          placeName: titleName + store.title,
+          roadName: addressName,
+          longitude: longitude, // 숫자 타입으로 저장
+          latitude: latitude, // 숫자 타입으로 저장
+          picture: store.img,
+        });
 
-          // 엔티티 저장
-          const savedMap = await this.mapRepository.save(newMap);
-          savedMaps.push(savedMap);
-        }
-      } catch (error) {
-        console.error(
-          `Error fetching coordinates for ${store.roadNames}:`,
-          error,
-        );
+        // 엔티티 저장
+        const savedMap = await this.mapRepository.save(newMap);
+        savedMaps.push(savedMap);
       }
     }
 
@@ -135,6 +127,7 @@ export class MapService {
     // 3. mapReview 정보를 페이징하여 가져오기
     const [mapReviews, itemCount] = await this.mapReviewRepository
       .createQueryBuilder('mapReview')
+      .leftJoinAndSelect('mapReview.user', 'user')
       .where('mapReview.mapId = :id', { id })
       .orderBy('mapReview.createdAt', pageOptionsDto.rev9ew)
       .skip(pageOptionsDto.skip)
@@ -174,21 +167,51 @@ export class MapService {
     }
   }
 
+  // async getMap(x?: string, y?: string, user?: { id: string }) {
+  //   const longitude = parseFloat(x);
+  //   const latitude = parseFloat(y);
+  //
+  //   // 0.5 범위 내의 데이터를 검색 (문자열을 숫자로 변환)
+  //   const maps = await this.mapRepository.find({
+  //     where: {
+  //       longitude: Between(
+  //         (longitude - 0.5).toString(),
+  //         (longitude + 0.5).toString(),
+  //       ),
+  //       latitude: Between(
+  //         (latitude - 0.5).toString(),
+  //         (latitude + 0.5).toString(),
+  //       ),
+  //     },
+  //   });
+  //
+  //   // 사용자가 있으면 북마크 정보를 조회하여 isBookMark 설정
+  //   if (user) {
+  //     const bookmarks = await this.bookmarkRepository.find({
+  //       where: { user: { id: user.id } },
+  //       relations: ['map'], // 북마크한 지도의 정보를 함께 가져옴
+  //     });
+  //
+  //     const bookmarkedMapIds = bookmarks.map((bookmark) => bookmark.map.id);
+  //
+  //     // 가져온 지도 리스트에서 북마크 여부를 설정
+  //     maps.forEach((map) => {
+  //       map.isBookMark = bookmarkedMapIds.includes(map.id);
+  //     });
+  //   }
+  //
+  //   return maps;
+  // }
+
   async getMap(x?: string, y?: string, user?: { id: string }) {
     const longitude = parseFloat(x);
     const latitude = parseFloat(y);
 
-    // 0.5 범위 내의 데이터를 검색 (문자열을 숫자로 변환)
+    // 0.5 범위 내의 데이터를 검색 (숫자 그대로 사용)
     const maps = await this.mapRepository.find({
       where: {
-        longitude: Between(
-          (longitude - 0.5).toString(),
-          (longitude + 0.5).toString(),
-        ),
-        latitude: Between(
-          (latitude - 0.5).toString(),
-          (latitude + 0.5).toString(),
-        ),
+        longitude: Between(longitude - 0.5, longitude + 0.5),
+        latitude: Between(latitude - 0.5, latitude + 0.5),
       },
     });
 

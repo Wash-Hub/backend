@@ -60,6 +60,7 @@ export class UserService {
   async getUserInfo(id: string) {
     const profile = await this.userRepository.findOne({
       where: { id },
+      relations: ['bookmark.map', 'mapReview.map'],
     });
     return profile;
   }

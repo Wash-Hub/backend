@@ -25,21 +25,21 @@ export class MapReviewController {
   constructor(private readonly mapReviewService: MapReviewService) {}
 
   @Post('create')
-  // @UseGuards(JwtAccessAuthGuard)
+  @UseGuards(JwtAccessAuthGuard)
   @ApiOperation({
     summary: '리뷰남기기 사진가능',
     description: '사진, 이름',
   })
   @UseInterceptors(FilesInterceptor('files'))
   async createReview(
-    // @Req() req: RequestWithUserInterface,
+    @Req() req: RequestWithUserInterface,
     @Body() createMapReviewDto: CreateMapReviewDto,
     @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
     console.log('sdad', files);
     const newReview = await this.mapReviewService.createReview(
       createMapReviewDto,
-      // req.user,
+      req.user,
       files,
     );
     return newReview;
