@@ -43,6 +43,7 @@ export class UserService {
       refreshToken,
       user.currentHashedRefreshToken,
     );
+
     if (isRefreshTokenMatching) return user;
   }
 
