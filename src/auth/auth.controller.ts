@@ -82,9 +82,6 @@ export class AuthController {
   @UseGuards(JwtRefreshAuthGuard)
   async refresh(@Req() req: RequestWithUserInterface) {
     const accessToken = await this.authService.generateAccessToken(req.user.id);
-    if (!accessToken) {
-      throw new UnauthorizedException('Expired RefreshToken');
-    }
     return accessToken;
   }
 
