@@ -5,7 +5,8 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { TokenPayloadInterface } from './tokenPayload.interface';
-import {UpdateUserDto} from "../user/dto/update-user.dto";
+import { UpdateUserDto } from '../user/dto/update-user.dto';
+import { PageOptionsDto } from '../common/dtos/page-options.dto';
 
 @Injectable()
 export class AuthService {
@@ -42,14 +43,14 @@ export class AuthService {
     return { refreshToken };
   }
 
-  async userInfo(id: string) {
-    const userInfo = await this.userService.getUserInfo(id);
+  async userInfo(id: string, pageOptionsDto: PageOptionsDto) {
+    const userInfo = await this.userService.getUserInfo(id, pageOptionsDto);
     return userInfo;
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
     const user = await this.userService.updateUser(id, updateUserDto);
-    return user
+    return user;
   }
 
   async deletedUser(id: string) {

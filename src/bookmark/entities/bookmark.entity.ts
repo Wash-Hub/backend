@@ -15,5 +15,5 @@ export class Bookmark extends CommonEntity {
     onDelete: 'CASCADE',
   })
   @JoinColumn()
-  public map?: Map;
+  public map: Map;
 }

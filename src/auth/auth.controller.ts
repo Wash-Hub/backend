@@ -11,6 +11,7 @@ import {
   HttpStatus,
   Req,
   UnauthorizedException,
+  Query,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -22,6 +23,7 @@ import { RequestWithUserInterface } from './requestWithUser.interface';
 import { JwtAccessAuthGuard } from './guard/jwtAccess-auth.guard';
 import { UpdateUserDto } from '../user/dto/update-user.dto';
 import { UserService } from '../user/user.service';
+import { PageOptionsDto } from '../common/dtos/page-options.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -55,11 +57,14 @@ export class AuthController {
     summary: ' 프로필정보',
     description: '프로필정보불러오는 api',
   })
-  async getUserInfo(@Req() req: RequestWithUserInterface) {
+  async getUserInfo(
+    @Req() req: RequestWithUserInterface,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ) {
     try {
       const { user } = req;
       console.log(user);
-      const data = await this.authService.userInfo(user.id);
+      const data = await this.authService.userInfo(user.id, pageOptionsDto);
       return { data };
     } catch (err) {
       throw new UnauthorizedException('No user');
