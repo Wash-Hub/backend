@@ -5,10 +5,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import { PageOptionsDto } from '../common/dtos/page-options.dto';
+import { PageMetaDto } from '../common/dtos/page-meta.dto';
+import { PageDto } from '../common/dtos/page.dto';
+import { Bookmark } from '../bookmark/entities/bookmark.entity';
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(Bookmark)
+    private bookmarkRepository: Repository<Bookmark>,
   ) {}
 
   async getUserById(id: string) {
@@ -57,13 +63,38 @@ export class UserService {
     await this.userRepository.delete(id);
     return 'deleted';
   }
-
-  async getUserInfo(id: string) {
+  async getUserInfo(id: string, pageOptionsDto: PageOptionsDto) {
+    // 1. 프로필 정보 가져오기 (mapReview만 relations에 포함)
     const profile = await this.userRepository.findOne({
       where: { id },
-      relations: ['bookmark.map', 'mapReview.map'],
+      relations: ['mapReview.map'], // 북마크는 따로 페이지네이션하므로 제외
     });
-    return profile;
+
+    if (!profile) {
+      throw new Error('User not found');
+    }
+
+    // 2. 북마크 정보를 페이지네이션하여 가져오기 (userRepository가 아닌 bookmarkRepository 사용)
+    const [bookmarks, bookmarkCount] = await this.bookmarkRepository
+      .createQueryBuilder('bookmark')
+      .leftJoinAndSelect('bookmark.map', 'map')
+      .where('bookmark.userId = :userId', { userId: id }) // 유저 ID로 필터링
+      .orderBy('bookmark.createdAt', pageOptionsDto.rev9ew || 'DESC') // 정렬 방식
+      .skip(pageOptionsDto.skip) // 몇 개의 데이터를 건너뛸지
+      .take(pageOptionsDto.take) // 가져올 데이터의 개수
+      .getManyAndCount();
+
+    // 3. 페이징 메타데이터 생성
+    const bookmarkPageMetaDto = new PageMetaDto({
+      itemCount: bookmarkCount,
+      pageOptionsDto,
+    });
+
+    // 4. 페이지네이션된 북마크와 유저 프로필 정보 반환
+    return {
+      profile,
+      bookmarks: new PageDto(bookmarks, bookmarkPageMetaDto),
+    };
   }
 
   //update
