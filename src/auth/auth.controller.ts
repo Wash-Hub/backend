@@ -72,6 +72,7 @@ export class AuthController {
   }
 
   @Patch()
+  @UseGuards(JwtAccessAuthGuard)
   @ApiBearerAuth('access-token')
   @HttpCode(200)
   @ApiOperation({ summary: '프로필 수정', description: '프로필 수정 api' })
