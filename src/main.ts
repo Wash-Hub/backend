@@ -13,7 +13,7 @@ async function bootstrap() {
       'http://localhost:8000',
       'http://localhost:8000/api-docs',
       'http://localhost:3000',
-      'https://www.washhub.co.kr/',
+      'https://www.washhub.co.kr',
     ],
     credentials: true,
   });
