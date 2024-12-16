@@ -71,9 +71,4 @@ export class MapController {
     const map = await this.mapService.getMap(x, y, user);
     return map;
   }
-
-  // @Post('cleanup')
-  // async cleanupCoorinates() {
-  //   return this.mapService.cleanUpCoordiates();
-  // }
 }

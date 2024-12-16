@@ -36,17 +36,16 @@ export class MapService {
     // HTML 파싱을 위한 axios 호출
     const storeResponse = await axios.get('https://laundry24.net/storestatus/');
     const $ = cheerio.load(storeResponse.data);
-
     // 데이터를 저장할 배열
     const storeData = [];
 
     // li 요소를 순회하면서 data-src, title, description 추출
     $('li.li2').each((index, element) => {
       const imgElement = $(element).find('img').first();
+      console.log(imgElement);
       const img = imgElement.attr('data-src'); // data-src 속성에서 이미지 URL을 추출
       let title = $(element).find('h4.h4').text().trim();
       const roadNames = $(element).find('p.p').text().trim();
-
       // "런드리24"라는 문자열을 제거
       if (title.includes('런드리24')) {
         title = title.replaceAll('런드리24', '').trim();
@@ -61,6 +60,8 @@ export class MapService {
         });
       }
     });
+    console.log($.html()); // 전체 HTML을 확인
+    // console.log('123', $);
 
     // 저장된 Map 객체를 저장할 배열
     const savedMaps: Map[] = [];
@@ -68,6 +69,7 @@ export class MapService {
 
     // 카카오 API를 통해 좌표 정보를 가져오고, Map 엔티티로 변환하여 저장
     for (const store of storeData) {
+      console.log(store);
       const kakaoResponse = await firstValueFrom(
         this.httpService.get(this.kakaoApiUrl, {
           params: { query: store.roadNames },
@@ -105,7 +107,6 @@ export class MapService {
       }
     }
 
-    console.log('2313', savedMaps);
     return savedMaps;
   }
 
@@ -187,26 +188,43 @@ export class MapService {
         latitude: Between(latitude - 0.1, latitude + 0.1),
       },
     });
-
-    // 사용자가 있으면 북마크 정보를 조회하여 isBookMark 설정
-    if (user) {
-      const bookmarks = await this.bookmarkRepository.find({
-        where: { user: { id: user.id } },
-        relations: ['map'], // 북마크한 지도의 정보를 함께 가져옴
-      });
-
-      const bookmarkedMapIds = bookmarks.map((bookmark) => bookmark.map.id);
-
-      // 가져온 지도 리스트에서 북마크 여부를 설정
-      maps.forEach((map) => {
-        map.isBookMark = bookmarkedMapIds.includes(map.id);
-      });
+    if (!user) {
+      return maps;
     }
+
+    // 사용자 북마크 ID 목록 가져오기
+    const bookmarkedMapIds = await this.getBookmarkedMapIds(user.id);
+
+    // 지도 리스트에서 북마크 여부 설정
+    const bookmarkedMapSet = new Set(bookmarkedMapIds);
+    maps.forEach((map) => {
+      map.isBookMark = bookmarkedMapSet.has(map.id);
+    });
 
     return maps;
   }
 
-  @Cron('0 0 0 1 * *')
+  //북마크 ID가져오기 별도 함수 정의
+
+  private async getBookmarkedMapIds(userId: string): Promise<string[]> {
+    const bookmarks = await this.bookmarkRepository.find({
+      where: { user: { id: userId } },
+      relations: ['map'],
+    });
+    return bookmarks.map((bookmark) => bookmark.map.id);
+  }
+  // @Cron('0 0 0 1 * *')
+  // handleCron() {
+  //   console.log('$$$$$$');
+  //   this.Coordinates();
+  // }
+  // @Cron('0 0 0 1 * *')
+  // handleCron() {
+  //   console.log('$$$$$$');
+  //   this.Coordinates();
+  // }
+
+  @Cron('* * * * *')
   handleCron() {
     console.log('$$$$$$');
     this.Coordinates();
