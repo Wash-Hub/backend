@@ -61,6 +61,7 @@ export class MapService {
       }
     });
     console.log($.html()); // 전체 HTML을 확인
+    console.log($.html()); // 전체 HTML을 확인
     // console.log('123', $);
 
     // 저장된 Map 객체를 저장할 배열
